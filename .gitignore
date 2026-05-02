@@ -1,0 +1,40 @@
+# =========================
+# TheekKaro.ai .gitignore
+# =========================
+
+# 1. Security & Secrets (CRITICAL - NEVER UPLOAD THESE)
+.streamlit/secrets.toml
+.streamlit/
+.env
+*.env
+
+# 2. Python Virtual Environments
+venv/
+env/
+.venv/
+
+# 3. Python Cache Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# 4. OS Generated Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 5. Build & Log Files (Not needed on GitHub)
+build_log.txt
+*.log
+
+# 6. GCP Specific
+.gcloudignore
+
+# 7. Large test/temp files
+*.mp4
+*.mov
+
+# 8. Local utility/debug scripts (these had hardcoded keys — keep off GitHub)
+test.py
+cleanup.py
