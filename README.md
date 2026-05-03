@@ -12,7 +12,7 @@
 
 **Transforming citizen complaints into official civic action — instantly.**
 
-*Submitted for the AI Seekho 2026 Hackathon Challenge*
+*Submitted for the AI Seekho 2026 Online Challenge*
 
 </div>
 
