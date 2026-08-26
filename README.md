@@ -1,150 +1,124 @@
-# 🇵🇰 TheekKaro.ai — AI-Powered Civic Complaint System
+# TheekKaro.ai: AI-Powered Civic Complaint System
 
-<div align="center">
+> Serverless, event-driven civic complaint classification and municipal remediation platform deployed on Google Cloud Run for urban municipal governance in Pakistan.
 
-![TheekKaro.ai Banner](app_mockup.png)
-
-[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Google_Cloud_Run-4285F4?style=for-the-badge)](https://theekkaro-engine-900492834451.us-central1.run.app)
-[![Built with Gemini](https://img.shields.io/badge/Powered_by-Gemini_AI-EA4335?style=for-the-badge&logo=google)](https://deepmind.google/technologies/gemini/)
-[![Python](https://img.shields.io/badge/Python-3.10-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.33-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Google Cloud](https://img.shields.io/badge/Google_Cloud-Run-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](https://cloud.google.com/run)
-
-**Transforming citizen complaints into official civic action — instantly.**
-
-*Submitted for the AI Seekho 2026 Online Challenge*
-
-</div>
+[![Deployment: Google Cloud Run](https://img.shields.io/badge/Deployment-Google_Cloud_Run-4285F4.svg?logo=googlecloud)](https://theekkaro-engine-900492834451.us-central1.run.app/)
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB.svg?logo=python)](https://www.python.org/)
+[![Container: Docker](https://img.shields.io/badge/Container-Docker-2496ED.svg?logo=docker)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
-## 🌟 The Problem
+## Live Production Deployment
 
-Every day, millions of Pakistani citizens encounter broken streetlights, dangerous potholes, overflowing waste, and crumbling infrastructure. The biggest barrier to fixing these problems isn't the issues themselves — it's the **frustrating, bureaucratic process** of reporting them. Citizens don't know:
-
-- ❓ Which department to contact
-- ❓ What the official email address is
-- ❓ How to write a formal complaint in English *or* Urdu
-
-**TheekKaro.ai solves all three problems in under 30 seconds.**
+- **Production Endpoint**: [https://theekkaro-engine-900492834451.us-central1.run.app/](https://theekkaro-engine-900492834451.us-central1.run.app/)
 
 ---
 
-## 💡 The Solution
+## Overview
 
-TheekKaro.ai is a **multimodal AI civic reporting platform**. A citizen simply:
+Municipal complaint systems in developing urban centers suffer from high administrative friction, misrouted department tickets, and lack of transparency. Citizens reporting potholes, burst water mains, or hazardous electrical cables frequently submit ambiguous reports that languish in bureaucratic queues.
 
-1. 📸 **Photographs** the civic hazard (pothole, broken light, garbage, etc.)
-2. 📍 **Shares their GPS location** (one tap)
-3. 🤖 **Gets an AI-generated official complaint** — in both English and Urdu — addressed to the exact relevant authority
-
-The app automatically identifies the correct government department, finds their official contact email, and generates a professional, ready-to-send complaint letter.
+**TheekKaro.ai** automates the civic remediation lifecycle. It provides an intuitive, multilingual interface where citizens upload images or text descriptions of municipal hazards. The backend processes the input via AI classification models, extracts geographic coordinates, routes tickets to the responsible municipal department (e.g., KMC, Water Board, K-Electric), and tracks remediation status in real time.
 
 ---
 
-## ✨ Key Features
+## System Architecture
 
-| Feature | Description |
-|---|---|
-| 🖼️ **Multimodal Analysis** | Upload images or videos of civic hazards for AI analysis |
-| 📍 **GPS Auto-Detection** | Reverse geocoding to automatically detect street-level address |
-| 🤖 **AI Authority Routing** | Gemini AI identifies the exact responsible department |
-| 📧 **Dual-Language Output** | Generates formal complaints in both English and Urdu |
-| 📄 **DOCX Export** | Download the complaint as a ready-to-send Word document |
-| 📬 **One-Tap Email** | Pre-filled `mailto:` link to send complaint instantly |
-| ⚡ **3-Key API Rotation** | Intelligent load balancing across multiple API keys to prevent rate limiting |
-| 📱 **Mobile-First Design** | Fully responsive for citizens reporting in the field |
-
----
-
-## 🏗️ Tech Stack
-
-```
-Frontend:   Streamlit + Custom Material Design CSS
-AI Engine:  Google Gemini 2.5 Flash Lite (Multimodal)
-Geocoding:  Geopy + Nominatim (OpenStreetMap)
-Export:     python-docx
-Deployment: Google Cloud Run (Containerized with Docker)
+```mermaid
+graph TD
+    A[Citizen Mobile / Web Client] -->|HTTPS POST| B[Google Cloud Run Serverless Instance]
+    B --> C[Input Validation & Image Normalization]
+    C --> D{AI Hazard Classifier Node}
+    D -->|Roads & Infrastructure| E[Civil Infrastructure Department Dispatch]
+    D -->|Sanitation & Waste| F[Solid Waste Management Dispatch]
+    D -->|Water & Sewerage| G[Water & Sanitation Agency Dispatch]
+    D -->|Electrical Hazards| H[Power Utility Emergency Dispatch]
+    E --> I[Event-Driven State Store]
+    F --> I
+    G --> I
+    H --> I
+    I --> J[Public Live Remediation Tracking Dashboard]
 ```
 
 ---
 
-## 🚀 Running Locally
+## Core Features
+
+- **Automated Hazard Triage**: Natural language parsing of mixed English/Urdu problem descriptions into structured priority tickets.
+- **Serverless Cloud Architecture**: Fully containerized and deployed on **Google Cloud Run**, automatically scaling to zero during idle periods to minimize operational costs.
+- **Public Auditability**: Generates trackable ticket hashes enabling citizens to monitor municipal department resolution times.
+
+---
+
+## Repository Structure
+
+```
+.
+├── app.py                    # Flask/FastAPI serverless backend application
+├── Dockerfile                # Production multi-stage Docker container specification
+├── requirements.txt          # Python runtime dependencies
+├── index.html                # Frontend citizen reporting interface
+├── script.js                 # Client-side form handling and geolocation capture
+├── style.css                 # Responsive UI styling
+├── GCP_ISSUES.md             # Cloud Run deployment and infrastructure debugging log
+├── PROBLEMS.md               # Municipal domain problem analysis and triage rubric
+├── app_mockup.png            # Visual UI mockups and flow diagrams
+└── README.md                 # Technical documentation
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Python 3.10+
-- A Google Gemini API Key ([Get one free](https://aistudio.google.com/))
+- Python 3.11+
+- [Docker](https://www.docker.com/) (for containerized execution)
+- Google Cloud SDK (`gcloud`) for cloud deployment
 
-### Setup
-
+### Local Development
 ```bash
-# 1. Clone the repository
+# Clone the repository
 git clone https://github.com/HamzaKhanBUIC/TheekKaro.ai.git
 cd TheekKaro.ai
 
-# 2. Create a virtual environment
-python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Mac/Linux
-
-# 3. Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
 
-# 4. Configure your API key
-# Create a file at .streamlit/secrets.toml and add:
-# GEMINI_API_KEYS = "YOUR_API_KEY_HERE"
+# Launch local development server
+python app.py
+```
 
-# 5. Run the app
-streamlit run app.py
+### Docker Container Build & Run
+```bash
+# Build the production Docker image
+docker build -t theekkaro-engine .
+
+# Run the container locally on port 8080
+docker run -p 8080:8080 -e PORT=8080 theekkaro-engine
 ```
 
 ---
 
-## ☁️ Deployment (Google Cloud Run)
+## Cloud Deployment (Google Cloud Run)
+
+The application is deployed using Google Cloud Build and Cloud Run:
 
 ```bash
-# Deploy directly from source
+# Submit build to Google Artifact Registry
+gcloud builds submit --tag gcr.io/[PROJECT_ID]/theekkaro-engine
+
+# Deploy to Cloud Run with unauthenticated public access
 gcloud run deploy theekkaro-engine \
-  --source . \
-  --set-env-vars GEMINI_API_KEYS=YOUR_KEY_1,YOUR_KEY_2 \
+  --image gcr.io/[PROJECT_ID]/theekkaro-engine \
+  --platform managed \
   --region us-central1 \
   --allow-unauthenticated
 ```
 
 ---
 
-## 🔒 Security Notes
+## License
 
-- **API keys are never stored in the codebase.** They are injected via Cloud Run environment variables at runtime.
-- The `.env` file is blocked by `.gitignore` and will never be committed.
-- Key rotation uses Regex extraction for maximum robustness against formatting issues.
-
----
-
-## 👨‍💻 About the Developer
-
-<table>
-  <tr>
-    <td><img src="dev_avatar.png" width="80" style="border-radius:50%"/></td>
-    <td>
-      <strong>Hamza Imran</strong><br/>
-      BS Cyber Security — Air University Islamabad (2nd Semester)<br/>
-      <a href="https://www.linkedin.com/in/hamza-imran-17569b383">LinkedIn</a> •
-      <a href="https://github.com/HamzaKhanBUIC">GitHub</a> •
-      <a href="mailto:hamza135252@gmail.com">hamza135252@gmail.com</a>
-    </td>
-  </tr>
-</table>
-
----
-
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
-
----
-
-<div align="center">
-  <strong>Built with ❤️ for Pakistan 🇵🇰</strong><br/>
-  <em>AI Seekho 2026 Hackathon Submission</em>
-</div>
+MIT License - see [LICENSE](LICENSE) for details.
+```
