@@ -1,124 +1,76 @@
-# TheekKaro.ai: AI-Powered Civic Complaint System
+# TheekKaro.ai
 
-> Serverless, event-driven civic complaint classification and municipal remediation platform deployed on Google Cloud Run for urban municipal governance in Pakistan.
+> Upload a photo or short video of a civic hazard (pothole, exposed wiring, open manhole) and Google Gemini drafts a formal complaint letter in English and Urdu, so a citizen can file a report in minutes instead of writing it by hand.
 
-[![Deployment: Google Cloud Run](https://img.shields.io/badge/Deployment-Google_Cloud_Run-4285F4.svg?logo=googlecloud)](https://theekkaro-engine-900492834451.us-central1.run.app/)
-[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB.svg?logo=python)](https://www.python.org/)
-[![Container: Docker](https://img.shields.io/badge/Container-Docker-2496ED.svg?logo=docker)](https://www.docker.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+**Status:** Hackathon prototype — AI Seekho 2026 Hackathon, May 2026 · Not currently deployed: the original Cloud Run instance returns HTTP 500 (checked 2026-10-28), so no live link is given
+**Demo:** none live today. A UI mockup is at [`app_mockup.png`](app_mockup.png).
 
----
+## What it does
 
-## Live Production Deployment
+`app.py` is a single Streamlit page (about 650 lines). The user:
 
-- **Production Endpoint**: [https://theekkaro-engine-900492834451.us-central1.run.app/](https://theekkaro-engine-900492834451.us-central1.run.app/)
+1. uploads an image or video (`mp4`, `mov`, `jpg`, `jpeg`, `png`) or takes a photo with the camera;
+2. optionally shares browser geolocation, which is reverse-geocoded with Nominatim (`geopy`); otherwise the location defaults to "Karachi, Pakistan";
+3. gets back one Gemini call's JSON result: hazard description, severity (Low / Medium / High / Critical), the *name* of the likely Pakistani authority, a public email for it (or "Not Found"), and the complaint letter in English and Urdu;
+4. can open the English letter in their mail client through a `mailto:` link, or download both letters as a `.docx`.
 
----
-
-## Overview
-
-Municipal complaint systems in developing urban centers suffer from high administrative friction, misrouted department tickets, and lack of transparency. Citizens reporting potholes, burst water mains, or hazardous electrical cables frequently submit ambiguous reports that languish in bureaucratic queues.
-
-**TheekKaro.ai** automates the civic remediation lifecycle. It provides an intuitive, multilingual interface where citizens upload images or text descriptions of municipal hazards. The backend processes the input via AI classification models, extracts geographic coordinates, routes tickets to the responsible municipal department (e.g., KMC, Water Board, K-Electric), and tracks remediation status in real time.
-
----
-
-## System Architecture
+Nothing is sent anywhere on the user's behalf.
 
 ```mermaid
-graph TD
-    A[Citizen Mobile / Web Client] -->|HTTPS POST| B[Google Cloud Run Serverless Instance]
-    B --> C[Input Validation & Image Normalization]
-    C --> D{AI Hazard Classifier Node}
-    D -->|Roads & Infrastructure| E[Civil Infrastructure Department Dispatch]
-    D -->|Sanitation & Waste| F[Solid Waste Management Dispatch]
-    D -->|Water & Sewerage| G[Water & Sanitation Agency Dispatch]
-    D -->|Electrical Hazards| H[Power Utility Emergency Dispatch]
-    E --> I[Event-Driven State Store]
-    F --> I
-    G --> I
-    H --> I
-    I --> J[Public Live Remediation Tracking Dashboard]
+graph LR
+    A[Photo / video / camera] --> B[Streamlit app.py]
+    L[Browser geolocation] --> B
+    B -->|Gemini File API upload| C[gemini-2.5-flash-lite]
+    C -->|JSON: hazard, severity, authority, letters| B
+    B --> D[mailto link]
+    B --> E[.docx download]
 ```
 
----
+Other pieces: rotation across several Gemini API keys with failover (`get_api_keys()` and the retry loop in `app.py`), salvage parsing for malformed JSON, and temp-file cleanup after each request.
 
-## Core Features
+## Quickstart
 
-- **Automated Hazard Triage**: Natural language parsing of mixed English/Urdu problem descriptions into structured priority tickets.
-- **Serverless Cloud Architecture**: Fully containerized and deployed on **Google Cloud Run**, automatically scaling to zero during idle periods to minimize operational costs.
-- **Public Auditability**: Generates trackable ticket hashes enabling citizens to monitor municipal department resolution times.
+Requires Python 3.10 or newer (the Dockerfile uses 3.10) and at least one Gemini API key.
 
----
-
-## Repository Structure
-
-```
-.
-├── app.py                    # Flask/FastAPI serverless backend application
-├── Dockerfile                # Production multi-stage Docker container specification
-├── requirements.txt          # Python runtime dependencies
-├── index.html                # Frontend citizen reporting interface
-├── script.js                 # Client-side form handling and geolocation capture
-├── style.css                 # Responsive UI styling
-├── GCP_ISSUES.md             # Cloud Run deployment and infrastructure debugging log
-├── PROBLEMS.md               # Municipal domain problem analysis and triage rubric
-├── app_mockup.png            # Visual UI mockups and flow diagrams
-└── README.md                 # Technical documentation
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-- Python 3.11+
-- [Docker](https://www.docker.com/) (for containerized execution)
-- Google Cloud SDK (`gcloud`) for cloud deployment
-
-### Local Development
 ```bash
-# Clone the repository
 git clone https://github.com/HamzaKhanBUIC/TheekKaro.ai.git
 cd TheekKaro.ai
-
-# Install Python dependencies
 pip install -r requirements.txt
-
-# Launch local development server
-python app.py
+export GEMINI_API_KEYS="AIza...,AIza..."     # PowerShell: $env:GEMINI_API_KEYS="AIza..."
+streamlit run app.py
 ```
 
-### Docker Container Build & Run
+Streamlit serves on `http://localhost:8501`. `python app.py` does not work for a Streamlit app.
+
+Docker (the image runs `streamlit run app.py` on port 8080):
+
 ```bash
-# Build the production Docker image
 docker build -t theekkaro-engine .
-
-# Run the container locally on port 8080
-docker run -p 8080:8080 -e PORT=8080 theekkaro-engine
+docker run -p 8080:8080 -e GEMINI_API_KEYS="AIza..." theekkaro-engine
 ```
 
----
+The repo includes no Cloud Run deployment script; the earlier README's `gcloud` commands were generic and have been removed.
 
-## Cloud Deployment (Google Cloud Run)
+## Configuration
 
-The application is deployed using Google Cloud Build and Cloud Run:
+| Variable | Required | Purpose |
+| :-- | :-- | :-- |
+| `GEMINI_API_KEYS` | yes | One or more Gemini API keys (pattern `AIza` + 35 characters), separated by commas or whitespace. Read from the environment first, then from Streamlit secrets (`.streamlit/secrets.toml`) |
 
-```bash
-# Submit build to Google Artifact Registry
-gcloud builds submit --tag gcr.io/[PROJECT_ID]/theekkaro-engine
+The model (`gemini-2.5-flash-lite`) is hard-coded in `app.py`.
 
-# Deploy to Cloud Run with unauthenticated public access
-gcloud run deploy theekkaro-engine \
-  --image gcr.io/[PROJECT_ID]/theekkaro-engine \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated
-```
+## Limitations
 
----
+- **Not a dispatch or tracking platform.** There is no ticket system, database, department routing, event bus, status tracking or dashboard. Gemini only suggests an authority name and email in its JSON; the AI-generated email may be wrong (the app's own disclaimer says so).
+- **Image or video only.** There is no free-text description input.
+- **Not deployed.** The earlier Cloud Run URL returns HTTP 500. The README previously linked it as the live app.
+- **Free-tier Gemini inputs may be used by Google for training.** The app shows a privacy disclaimer; do not upload sensitive content.
+- **Account-wide file wipe.** On a quota error, `repair_node()` deletes all files uploaded under the failing Gemini key, which is unsafe on a shared key.
+- **Old pinned dependencies.** `streamlit==1.33.0`, `python-dotenv==1.0.1` and `geopy==2.4.1` have published advisories; the audit recommended upgrading.
+- **No tests, no CI.**
+- **Unused files.** `index.html`, `style.css` and `script.js` are a separate static landing page, not part of the Streamlit app. `TheekKaro.ai` in the repo root is an empty git submodule pointer (gitlink) with no content.
+- [`PROBLEMS.md`](PROBLEMS.md) and [`GCP_ISSUES.md`](GCP_ISSUES.md) are the author's notes on problems and Cloud Run issues met during the hackathon.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-```
+MIT, see [LICENSE](LICENSE).
