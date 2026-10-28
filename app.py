@@ -6,6 +6,7 @@ import json
 import re
 import tempfile
 import random
+import html
 
 # --- Civic Features Imports ---
 from docx import Document
@@ -15,6 +16,16 @@ from streamlit_geolocation import streamlit_geolocation
 from geopy.geocoders import Nominatim
 
 MODEL_NAME = "gemini-2.5-flash-lite"
+EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$")
+
+def _safe_text(value, fallback):
+    if value is None:
+        return fallback
+    text = str(value).strip()
+    return text if text else fallback
+
+def _is_valid_email(value):
+    return bool(EMAIL_PATTERN.fullmatch(value))
 
 def get_api_keys():
     """Extracts valid 39-character Gemini API keys using Regex for maximum robustness.
@@ -528,6 +539,18 @@ if final_file is not None:
             urdu_match = re.search(r'"urdu_complaint"\s*:\s*"(.*?)"(?=\s*,|\s*\})', raw_text, re.DOTALL)
             urdu_text = urdu_match.group(1).replace('\\n', '\n').replace('\\"', '"') if urdu_match else "Could not salvage Urdu text."
 
+        hazard = _safe_text(hazard, "Unknown Hazard")
+        severity = _safe_text(severity, "Unknown")
+        authority = _safe_text(authority, "Relevant Authorities")
+        authority_email = _safe_text(authority_email, "Not Found")
+        english_text = _safe_text(english_text, "Content missing.")
+        urdu_text = _safe_text(urdu_text, "Content missing.")
+
+        escaped_hazard = html.escape(hazard, quote=True)
+        escaped_severity = html.escape(severity, quote=True)
+        escaped_authority = html.escape(authority, quote=True)
+        valid_authority_email = authority_email if _is_valid_email(authority_email) else None
+
         # --- UI Display: Intelligence Dashboard ---
         st.markdown("---")
         st.markdown(f'<p style="font-family: var(--font-mono); color: #10B981; font-weight: bold; font-size: 1.1rem; margin-bottom: 1.5rem;">[ STATUS: HAZARD DETECTED ]</p>', unsafe_allow_html=True)
@@ -546,7 +569,7 @@ if final_file is not None:
             st.markdown(f"""
                 <div style="background-color: #1E293B; border-radius: 8px; padding: 20px; border: 1px solid #334155;">
                     <p style="color: #94A3B8; margin: 0; font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Detected Hazard</p>
-                    <p style="color: #FFFFFF; margin: 0; font-size: 1.25rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{hazard}</p>
+                    <p style="color: #FFFFFF; margin: 0; font-size: 1.25rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{escaped_hazard}</p>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -554,7 +577,7 @@ if final_file is not None:
             st.markdown(f"""
                 <div style="background-color: #1E293B; border-radius: 8px; padding: 20px; border: 1px solid #334155;">
                     <p style="color: #94A3B8; margin: 0; font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Severity Level</p>
-                    <p style="color: {sev_color}; margin: 0; font-size: 1.25rem; font-weight: 600;">{severity}</p>
+                    <p style="color: {sev_color}; margin: 0; font-size: 1.25rem; font-weight: 600;">{escaped_severity}</p>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -562,7 +585,7 @@ if final_file is not None:
             st.markdown(f"""
                 <div style="background-color: #1E293B; border-radius: 8px; padding: 20px; border: 1px solid #334155;">
                     <p style="color: #94A3B8; margin: 0; font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Routing Authority</p>
-                    <p style="color: #FFFFFF; margin: 0; font-size: 1.25rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{authority}</p>
+                    <p style="color: #FFFFFF; margin: 0; font-size: 1.25rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{escaped_authority}</p>
                 </div>
             """, unsafe_allow_html=True)
             
@@ -585,34 +608,20 @@ if final_file is not None:
         action_col1, action_col2 = st.columns(2)
 
         with action_col1:
-            if authority_email.lower() == "not found":
+            if not valid_authority_email:
                 st.warning(f"No public email found for {authority}. Search manually for: '{authority} official email Pakistan'")
             else:
                 subject_enc = urllib.parse.quote(f"Urgent Civic Hazard Report: {hazard}")
                 # Truncate body to 1800 chars to stay within URL limits on all browsers/platforms
                 body_preview = english_text[:1800] + ("\n\n[Full complaint in attached .docx]" if len(english_text) > 1800 else "")
                 body_enc = urllib.parse.quote(body_preview)
-                mailto_link = f"mailto:{authority_email}?subject={subject_enc}&body={body_enc}"
-                
-                st.markdown(f"""
-                    <div style="margin-bottom: 0.5rem;">
-                        <a href="{mailto_link}" 
-                           style="display:inline-block; background-color:#4285F4; color:white !important;
-                                  padding: 0.6rem 1.2rem; border-radius:6px; text-decoration:none;
-                                  font-weight:600; font-size:0.9rem; transition: background 0.2s;"
-                           onmouseover="this.style.backgroundColor='#1A73E8'"
-                           onmouseout="this.style.backgroundColor='#4285F4'">
-                            ✉️ Send Email to Authority
-                        </a>
-                    </div>
-                    <p style="font-size:0.75rem; color:#5F6368; margin-top:0.3rem;">
-                        Sending to: <strong>{authority_email}</strong><br>
-                        <em>If Gmail doesn't open automatically, copy the address above and paste into your email client.</em>
-                    </p>
-                """, unsafe_allow_html=True)
+                mailto_link = f"mailto:{valid_authority_email}?subject={subject_enc}&body={body_enc}"
+                st.link_button("✉️ Send Email to Authority", mailto_link, type="primary")
+                st.caption(f"Sending to: {valid_authority_email}")
+                st.caption("If Gmail doesn't open automatically, copy the address below and paste it into your email client.")
                 
                 # Fallback: Let user copy email address manually
-                st.code(authority_email, language=None)
+                st.code(valid_authority_email, language=None)
 
         with action_col2:
             doc = Document()
